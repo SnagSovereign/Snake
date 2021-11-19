@@ -8,7 +8,7 @@ public class Snake : MonoBehaviour {
 	[SerializeField] GameObject apple;
 	[SerializeField] GameObject tail;
 
-	[SerializeField] float posUpdateRate = 0.3f;
+	[SerializeField] float tickRate = 0.1f;
 
 	BoxCollider2D boxCollider;
 
@@ -21,7 +21,7 @@ public class Snake : MonoBehaviour {
 	void Start () 
 	{
 		boxCollider = GetComponent<BoxCollider2D>();
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 0; i++)
         {
 			LengthenTail();
         }
@@ -31,14 +31,22 @@ public class Snake : MonoBehaviour {
 	// Update is called once per frame
 	void Update () 
 	{
-		if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
+		if ((Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) && direction != Vector2.down)
+		{
 			direction = Vector2.up;
-		else if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))
+		}
+		else if ((Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) && direction != Vector2.right)
+		{
 			direction = Vector2.left;
-		else if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))
+		}
+		else if ((Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) && direction != Vector2.up)
+		{
 			direction = Vector2.down;
-		else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
+		}
+		else if ((Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) && direction != Vector2.left)
+		{
 			direction = Vector2.right;
+		}
 	}
 
 	IEnumerator ApplyMovement()
@@ -57,7 +65,7 @@ public class Snake : MonoBehaviour {
 			previousPos = currentPos;
         }
 
-		yield return new WaitForSeconds(posUpdateRate);
+		yield return new WaitForSeconds(tickRate);
 		StartCoroutine(ApplyMovement());
 	}
 
@@ -97,15 +105,14 @@ public class Snake : MonoBehaviour {
     {
 		if(boxCollider.IsTouchingLayers(LayerMask.GetMask("Apple")))
         {
-			Destroy(col.gameObject);
 			LengthenTail();
-			SpawnApple();
+			ResetApplePos();
         }
     }
 
-	void SpawnApple()
+	void ResetApplePos()
     {
 		Vector2 randomPos = new Vector2(Random.Range(-8, 9), Random.Range(-8, 9));
-		Instantiate(apple, randomPos, Quaternion.identity);
+		apple.transform.position = randomPos;
     }
 }
