@@ -4,32 +4,53 @@ using UnityEngine;
 
 public class Snake : MonoBehaviour {
 
+	// 0 = top wall
+	// 1 = bottom wall
+	// 2 = left wall
+	// 3 = right wall
+	[SerializeField] GameObject[] walls;
+
 	[Header("Prefabs")]
 	[SerializeField] GameObject apple;
 	[SerializeField] GameObject tail;
 
+	[Header("Game Parameters")]
 	[SerializeField] float tickRate = 0.1f;
-
-	BoxCollider2D boxCollider;
-
-	List<GameObject> tailObjects = new List<GameObject>();
+	[SerializeField] int startingLength;
+	[SerializeField] Vector2 startingPos;
+	[SerializeField] Vector2 gridSize;
 
 	Vector2 direction = Vector2.right;
 	bool gameOver = false;
 
+	List<GameObject> tailObjects = new List<GameObject>();
+
 	// Use this for initialization
-	void Start () 
+	void Start()
 	{
-		boxCollider = GetComponent<BoxCollider2D>();
-        for (int i = 0; i < 0; i++)
-        {
+		// Scale the walls
+		walls[0].transform.localScale = walls[1].transform.localScale = new Vector3(gridSize.x, 1f, 1f);
+		walls[2].transform.localScale = walls[3].transform.localScale = new Vector3(1f, gridSize.y + 2f, 1f);
+		// Position the walls
+		walls[0].transform.position = walls[1].transform.position = new Vector3(0f, (gridSize.y + 1f) / 2f, 0f);
+		walls[1].transform.position *= -1f;
+		walls[2].transform.position = walls[3].transform.position = new Vector3((gridSize.x + 1f) / 2f, 0f, 0f);
+		walls[2].transform.position *= -1f;
+		// Set the size of the camera
+		Camera.main.orthographicSize = 0.5f * gridSize.y + 1f;
+
+		// Setup the head of the snake
+		tailObjects.Add(Instantiate(tail, startingPos, Quaternion.identity));
+
+		for (int i = 0; i < startingLength - 1; i++)
+		{
 			LengthenTail();
-        }
-		StartCoroutine(ApplyMovement());
+		}
+		StartCoroutine(NextTick());
 	}
-	
+
 	// Update is called once per frame
-	void Update () 
+	void Update()
 	{
 		if ((Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) && direction != Vector2.down)
 		{
@@ -49,50 +70,58 @@ public class Snake : MonoBehaviour {
 		}
 	}
 
-	IEnumerator ApplyMovement()
-    {
-		Vector2 previousPos = transform.position;
+	IEnumerator NextTick()
+	{
+		// Calculate the next position of the snake head
+		Vector2 nextHeadPos = new Vector3(tailObjects[0].transform.position.x + direction.x,
+										  tailObjects[0].transform.position.y + direction.y);
 
-		// Move the snake head in a direction
-		transform.position = new Vector3(
-					 transform.position.x + direction.x,
-					 transform.position.y + direction.y);
+		// Check if the snake is about to hit an apple
+		if (tailObjects[0].transform.position == apple.transform.position)
+		{
+			EatApple();
+		}
 
-        for (int index = 0; index < tailObjects.Count; index++)
-        {
-			Vector2 currentPos = tailObjects[index].transform.position;
-			tailObjects[index].transform.position = previousPos;
-			previousPos = currentPos;
+		// Check if the snake is about to head out of bounds
+		else if (nextHeadPos.x >= (gridSize.x + 1f) / 2f || nextHeadPos.x <= -(gridSize.x + 1f) / 2f 
+		 || nextHeadPos.y >= (gridSize.y + 1f) / 2f || nextHeadPos.y <= -(gridSize.y + 1f) / 2f)
+		{
+			print("Out of bounds");
+			yield break;
         }
 
+		ApplyMovement(nextHeadPos);
+
 		yield return new WaitForSeconds(tickRate);
-		StartCoroutine(ApplyMovement());
+		StartCoroutine(NextTick());
+	}
+
+	void ApplyMovement(Vector2 nextHeadPos)
+    {
+		// Set the position of the end tail to the position of the head
+		tailObjects[tailObjects.Count - 1].transform.position = nextHeadPos;
+		// Move the index of the end tail to be 0
+		tailObjects.Insert(0, tailObjects[tailObjects.Count - 1]);
+		tailObjects.RemoveAt(tailObjects.Count - 1);
 	}
 
 	void LengthenTail()
     {
 		Vector2 newTailPos;
 
-		if(tailObjects.Count == 0)
+		// If there is just a head
+		if(tailObjects.Count == 1)
         {
-			newTailPos = (Vector2)transform.position - direction;
+			newTailPos = (Vector2)tailObjects[0].transform.position - direction;
         }
 		else
         {
 			Vector3 posDifference;
 
-			if(tailObjects.Count == 1)
-            {
-				// Subtract the position of the head from the location of the tail
-				posDifference = tailObjects[tailObjects.Count - 1].transform.position -
-								transform.position;
-            }
-			else
-            {
-				// Subtract the position of the second last tail object from the location of the last tail object
-				posDifference = tailObjects[tailObjects.Count - 1].transform.position -
-										tailObjects[tailObjects.Count - 2].transform.position;
-			}
+			// Subtract the position of the second last tail object from the location of the last tail object
+			posDifference = tailObjects[tailObjects.Count - 1].transform.position -
+							tailObjects[tailObjects.Count - 2].transform.position;
+			
 			// Use the posDifference to calculate the position of the new tail
 			newTailPos = tailObjects[tailObjects.Count - 1].transform.position + posDifference;
 		}
@@ -101,18 +130,14 @@ public class Snake : MonoBehaviour {
 		tailObjects.Add(newTail);
 	}
 
-	void OnTriggerEnter2D(Collider2D col)
+    void EatApple()
     {
-		if(boxCollider.IsTouchingLayers(LayerMask.GetMask("Apple")))
-        {
-			LengthenTail();
-			ResetApplePos();
-        }
-    }
-
-	void ResetApplePos()
-    {
-		Vector2 randomPos = new Vector2(Random.Range(-8, 9), Random.Range(-8, 9));
+		// Lengthen the snake
+		LengthenTail();
+		// generate a randoPos for the apple
+		Vector2 randomPos = new Vector2(Random.Range((int)-gridSize.x/2, (int)gridSize.x/2 + 1), 
+										Random.Range((int)-gridSize.y/2, (int)gridSize.y/2 + 1));
+		// set apple to randomPos
 		apple.transform.position = randomPos;
     }
 }
