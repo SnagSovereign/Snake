@@ -297,10 +297,10 @@ MonoBehaviour:
   - {fileID: 918516881}
   apple: {fileID: 300942221}
   tail: {fileID: 1745133319624626, guid: 40aaeafbfc87287449a372c052043292, type: 2}
-  tickRate: 0.03
-  startingLength: 30
+  tickRate: 0.05
+  startingLength: 4
   startingPos: {x: -2, y: 0}
-  gridSize: {x: 69, y: 49}
+  gridSize: {x: 49, y: 29}
 --- !u!1 &918516881
 GameObject:
   m_ObjectHideFlags: 0

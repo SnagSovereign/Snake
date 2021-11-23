@@ -21,6 +21,7 @@ public class Snake : MonoBehaviour {
 	[SerializeField] Vector2 gridSize;
 
 	Vector2 direction = Vector2.right;
+	
 	bool gameOver = false;
 
 	List<GameObject> tailObjects = new List<GameObject>();
@@ -81,7 +82,6 @@ public class Snake : MonoBehaviour {
 		{
 			EatApple();
 		}
-
 		// Check if the snake is about to head out of bounds
 		else if (nextHeadPos.x >= (gridSize.x + 1f) / 2f || nextHeadPos.x <= -(gridSize.x + 1f) / 2f 
 		 || nextHeadPos.y >= (gridSize.y + 1f) / 2f || nextHeadPos.y <= -(gridSize.y + 1f) / 2f)
@@ -89,6 +89,19 @@ public class Snake : MonoBehaviour {
 			print("Out of bounds");
 			yield break;
         }
+		// Check if the snake is about to hit itself
+		else
+		{
+			// Run a loop to see if the head is about to hit itself
+			for (int index = 1; index < tailObjects.Count - 1; index++)
+			{
+				if (nextHeadPos == (Vector2)tailObjects[index].transform.position)
+				{
+					print("Out of bounds");
+					yield break;
+				}
+			}
+		}
 
 		ApplyMovement(nextHeadPos);
 
