@@ -20,7 +20,8 @@ public class Snake : MonoBehaviour {
 	[SerializeField] Vector2 startingPos;
 	[SerializeField] Vector2 gridSize;
 
-	Vector2 direction = Vector2.right;
+	Vector3 direction = Vector3.right;
+	Vector3 previousDirection;
 	
 	bool gameOver = false;
 
@@ -47,25 +48,26 @@ public class Snake : MonoBehaviour {
 		{
 			LengthenTail();
 		}
+		previousDirection = direction;
 		StartCoroutine(NextTick());
 	}
 
 	// Update is called once per frame
 	void Update()
 	{
-		if ((Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) && direction != Vector2.down)
+		if ((Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) && previousDirection != Vector3.down)
 		{
 			direction = Vector2.up;
 		}
-		else if ((Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) && direction != Vector2.right)
+		else if ((Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) && previousDirection != Vector3.right)
 		{
 			direction = Vector2.left;
 		}
-		else if ((Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) && direction != Vector2.up)
+		else if ((Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) && previousDirection != Vector3.up)
 		{
 			direction = Vector2.down;
 		}
-		else if ((Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) && direction != Vector2.left)
+		else if ((Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) && previousDirection != Vector3.left)
 		{
 			direction = Vector2.right;
 		}
@@ -74,11 +76,10 @@ public class Snake : MonoBehaviour {
 	IEnumerator NextTick()
 	{
 		// Calculate the next position of the snake head
-		Vector2 nextHeadPos = new Vector3(tailObjects[0].transform.position.x + direction.x,
-										  tailObjects[0].transform.position.y + direction.y);
+		Vector3 nextHeadPos = tailObjects[0].transform.position + direction;
 
 		// Check if the snake is about to hit an apple
-		if (tailObjects[0].transform.position == apple.transform.position)
+		if (nextHeadPos == apple.transform.position)
 		{
 			EatApple();
 		}
@@ -95,14 +96,15 @@ public class Snake : MonoBehaviour {
 			// Run a loop to see if the head is about to hit itself
 			for (int index = 1; index < tailObjects.Count - 1; index++)
 			{
-				if (nextHeadPos == (Vector2)tailObjects[index].transform.position)
+				if (nextHeadPos == tailObjects[index].transform.position)
 				{
-					print("Out of bounds");
+					print("Crashed into yourself");
 					yield break;
 				}
 			}
 		}
 
+		// Move the snake if it has not crashed
 		ApplyMovement(nextHeadPos);
 
 		yield return new WaitForSeconds(tickRate);
@@ -116,6 +118,7 @@ public class Snake : MonoBehaviour {
 		// Move the index of the end tail to be 0
 		tailObjects.Insert(0, tailObjects[tailObjects.Count - 1]);
 		tailObjects.RemoveAt(tailObjects.Count - 1);
+		previousDirection = direction;
 	}
 
 	void LengthenTail()
@@ -125,7 +128,7 @@ public class Snake : MonoBehaviour {
 		// If there is just a head
 		if(tailObjects.Count == 1)
         {
-			newTailPos = (Vector2)tailObjects[0].transform.position - direction;
+			newTailPos = tailObjects[0].transform.position - direction;
         }
 		else
         {
